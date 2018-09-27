@@ -229,7 +229,10 @@ class Param(PaneBase):
                 what.append('bounds')
             self._callbacks['object'][p_name] = (link, what)
 
-        if is_parameterized(value):
+        options = kwargs.get('options', [])
+        if isinstance(options, dict):
+            options = options.values()
+        if is_parameterized(value) or any(is_parameterized(o) for o in options):
             return [widget, Toggle(name='...', button_type='primary')]
         else:
             return [widget]
