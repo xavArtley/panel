@@ -317,51 +317,50 @@ class ParamMethod(PaneBase):
         params = parameterized.param.params_depended_on(self.object.__name__)
         model = self._pane._get_model(doc, root, parent, comm)
         history = [model]
-        for p in params:
-            def update_pane(change, pinfo=p, history=history):
-                this = update_pane
-                if change.what != 'value': return
 
-                # Update nested dependencies if parameterized object changes
-                if is_parameterized(change.new):
-                    new_deps = parameterized.param.params_depended_on(self.object.__name__)
-                    for p in params:
-                        if p in new_deps: continue
-                        (p.inst or p.cls).param.unwatch(this, p.name, p.what)
-                    for dep in new_deps:
-                        if dep in params: continue
-                        (dep.inst or dep.cls).param.watch(this, dep.name, dep.what)
-                
-                # Try updating existing pane
-                old_model = history[0]
-                new_object = self.object()
-                pane_type = self.get_pane_type(new_object)
-                if type(self._pane) is pane_type:
-                    if isinstance(new_object, PaneBase):
-                        new_params = {k: v for k, v in new_object.get_param_values()
-                                      if k != 'name'}
-                        self._pane.set_param(**new_params)
-                        new_object._cleanup(None, final=True)
-                    else:
-                        self._pane.object = new_object
-                    return
+        def update_pane(change):
+            # Update nested dependencies if parameterized object changes
+            obj = (change.obj or change.cls)
+            if is_parameterized(change.new) and obj is parameterized:
+                new_deps = parameterized.param.params_depended_on(self.object.__name__)
+                for p in params:
+                    if p in new_deps: continue
+                    (p.inst or p.cls).param.unwatch(update_pane, p.name, p.what)
+                for dep in new_deps:
+                    if dep in params: continue
+                    (dep.inst or dep.cls).param.watch(update_pane, dep.name, dep.what)
 
-                # Replace pane entirely
-                self._pane._cleanup(old_model)
-                self._pane = Pane(new_object, _temporary=True, **self._kwargs)
-                new_model = self._pane._get_model(doc, root, parent, comm)
-                def update_models():
-                    if old_model is new_model: return
-                    index = parent.children.index(old_model)
-                    parent.children[index] = new_model
-                    history[0] = new_model
-
-                if comm:
-                    update_models()
-                    push(doc, comm)
+            # Try updating existing pane
+            old_model = history[0]
+            new_object = self.object()
+            pane_type = self.get_pane_type(new_object)
+            if type(self._pane) is pane_type:
+                if isinstance(new_object, PaneBase):
+                    new_params = {k: v for k, v in new_object.get_param_values()
+                                  if k != 'name'}
+                    self._pane.set_param(**new_params)
+                    new_object._cleanup(None, final=True)
                 else:
-                    doc.add_next_tick_callback(update_models)
+                    self._pane.object = new_object
+                return
 
+            # Replace pane entirely
+            self._pane._cleanup(old_model)
+            self._pane = Pane(new_object, _temporary=True, **self._kwargs)
+            new_model = self._pane._get_model(doc, root, parent, comm)
+            def update_models():
+                if old_model is new_model: return
+                index = parent.children.index(old_model)
+                parent.children[index] = new_model
+                history[0] = new_model
+
+            if comm:
+                update_models()
+                push(doc, comm)
+            else:
+                doc.add_next_tick_callback(update_models)
+
+        for p in params:
             (p.inst or p.cls).param.watch(update_pane, p.name, p.what)
         return model
 
