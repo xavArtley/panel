@@ -9,6 +9,7 @@ from .holoviews import HoloViews
 
 from holoviews.plotting.links import Link
 from bokeh.models import CustomJS
+from panel.holoviews import generate_hvelems_bkplots_map
 
 
 class WidgetLink(Link):
@@ -88,12 +89,7 @@ def find_links(root_view, root_model):
     if not widget_views or not hv_views:
         return
     
-    #mapping holoview element -> bokeh plot
-    from collections import defaultdict
-    map_hve_bk = defaultdict(list)
-    for hv_view in hv_views:
-        if root_model.ref['id'] in hv_view._plots: 
-            map_hve_bk[hv_view.object].append(hv_view._plots[root_model.ref['id']]) 
+    map_hve_bk = generate_hvelems_bkplots_map(root_model, hv_views)
                     
     found = [(link, src_widget, tgt_bk) for src_widget in widget_views if src_widget in WidgetLink.registry
              for link in WidgetLink.registry[src_widget]

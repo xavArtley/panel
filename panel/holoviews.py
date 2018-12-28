@@ -207,8 +207,6 @@ class HoloViews(PaneBase):
             widgets = [Player(length=nframes)]
         return widgets, dim_values
 
-
-
 def is_bokeh_element_plot(plot):
     """
     Checks whether plotting instance is a HoloViews ElementPlot rendered
@@ -217,6 +215,18 @@ def is_bokeh_element_plot(plot):
     from holoviews.plotting.plot import GenericElementPlot, GenericOverlayPlot
     return (plot.renderer.backend == 'bokeh' and isinstance(plot, GenericElementPlot)
             and not isinstance(plot, GenericOverlayPlot))
+
+def generate_hvelems_bkplots_map(root_model, hv_views):
+    #mapping holoview element -> bokeh plot
+    from collections import defaultdict
+    map_hve_bk = defaultdict(list)
+    for hv_view in hv_views:
+        if root_model.ref['id'] in hv_view._plots: 
+            bk_plots = hv_view._plots[root_model.ref['id']].traverse(lambda x: x, [is_bokeh_element_plot])
+            for plot in bk_plots:
+                for hv_elem in plot.link_sources:
+                    map_hve_bk[hv_elem].append(plot) 
+    return map_hve_bk
 
 
 def find_links(root_view, root_model):
@@ -232,23 +242,18 @@ def find_links(root_view, root_model):
     if not hv_views:
         return
     
-    #mapping holoview element -> bokeh plot
-    from collections import defaultdict
-    map_hve_bk = defaultdict(list)
-    for hv_view in hv_views:
-        if root_model.ref['id'] in hv_view._plots: 
-            map_hve_bk[hv_view.object].append(hv_view._plots[root_model.ref['id']]) 
-
+    map_hve_bk = generate_hvelems_bkplots_map(root_model, hv_views)
+    
     try:
         from holoviews.plotting.links import Link
     except:
         return
     
     from itertools import product
-    found = [(link, src_plot, tgt_plot) for hv_view in hv_views 
-             if hv_view.object in Link.registry
-             for link in Link.registry[hv_view.object]
-             for src_plot, tgt_plot in product(map_hve_bk[hv_view.object],map_hve_bk[link.target])]
+    found = [(link, src_plot, tgt_plot) for hv_elem in map_hve_bk.keys() 
+             if hv_elem in Link.registry
+             for link in Link.registry[hv_elem]
+             for src_plot, tgt_plot in product(map_hve_bk[hv_elem], map_hve_bk[link.target])]
 
     callbacks = []
     for link, src_plot, tgt_plot in found:
