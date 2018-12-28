@@ -5,6 +5,9 @@ import pytest
 from bokeh.plotting import Figure
 
 from panel.layout import Column, Row
+from panel.holoviews import HoloViews
+from panel.widgets import FloatSlider
+from panel.widgetlinks import WidgetLink 
 
 try:
     import holoviews as hv
@@ -45,3 +48,31 @@ def test_holoviews_axes_range_link(document, comm):
     
     assert p3.x_range == p4.x_range == p5.x_range
     assert p3.y_range == p4.y_range == p5.y_range
+
+
+@hv_available
+def test_widget_links(document, comm):
+    size_widget = FloatSlider(value=5, start=1, end=10)
+    points1 = hv.Points([1,2,3])
+    
+    WidgetLink(size_widget, points1, target_model='glyph', target_property='size')
+    
+    row = Row(points1, size_widget)
+    model = row._get_root(document, comm=comm)
+    hv_views = row.select(HoloViews)
+    widg_views = row.select(FloatSlider)
+    
+    assert len(hv_views) == 1
+    assert len(widg_views) == 1
+    slider = widg_views[0]._models[model.ref['id']]
+    scatter = hv_views[0]._plots[model.ref['id']].handles['glyph']
+    
+    assert len(slider.js_property_callbacks['change:value']) == 2
+    
+    widgetlink_customjs = slider.js_property_callbacks['change:value'][-1]
+    assert widgetlink_customjs.args['source'] is slider
+    assert widgetlink_customjs.args['target'] is scatter
+    assert widgetlink_customjs.args['target_model'] == 'glyph'
+    assert widgetlink_customjs.args['target_property'] == 'size'
+    
+    
