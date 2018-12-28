@@ -1,6 +1,7 @@
 """
 """
 import param
+import weakref
 
 from .layout import Viewable, Panel
 from .widgets import Widget
@@ -20,6 +21,7 @@ class WidgetLink(Link):
     bokeh model and property the widget value will be
     linked to.
     """
+    registry = weakref.WeakKeyDictionary()
     
     code = param.String(default=None)
     
@@ -93,13 +95,13 @@ def find_links(root_view, root_model):
         if root_model.ref['id'] in hv_view._plots: 
             map_hve_bk[hv_view.object].append(hv_view._plots[root_model.ref['id']]) 
                     
-    found = [(link, src_widget, tgt_bk) for src_widget in widget_views if src_widget in Link.registry
-             for link in Link.registry[src_widget]
+    found = [(link, src_widget, tgt_bk) for src_widget in widget_views if src_widget in WidgetLink.registry
+             for link in WidgetLink.registry[src_widget]
              for tgt_bk in map_hve_bk[link.target]]
     
     callbacks = []
     for link, src_widget, tgt_bk in found:
-        cb = Link._callbacks['bokeh'][type(link)]
+        cb = WidgetLink._callbacks['bokeh'][type(link)]
         if src_widget is None or (getattr(link, '_requires_target', False)
                                 and tgt_bk is None):
             continue
