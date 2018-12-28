@@ -88,21 +88,15 @@ def find_links(root_view, root_model):
     if not widget_views or not hv_views:
         return
     
-    #mapping bokeh plot -> holoview element
-    map_bk_hve = {hv_view._plots[root_model.ref['id']]: hv_view._plots[root_model.ref['id']].link_sources[0] 
-                for hv_view in hv_views if root_model.ref['id'] in hv_view._plots}
     #mapping holoview element -> bokeh plot
     map_hve_bk = defaultdict(list)
-    for k,v in map_bk_hve.items() : map_hve_bk[v].append(k)
-
-    found = []
-    for elem, links in Link.registry.items():
-        if isinstance(elem, Widget):
-            for src_widget in widget_views:
-                if src_widget is elem:
-                    for link in links:
-                        for tgt_bk in map_hve_bk[link.target]:
-                            found.append((link, src_widget, tgt_bk))
+    for hv_view in hv_views:
+        if root_model.ref['id'] in hv_view._plots: 
+            map_hve_bk[hv_view.object].append(hv_view._plots[root_model.ref['id']]) 
+                    
+    found = [(link, src_widget, tgt_bk) for src_widget in widget_views if src_widget in Link.registry
+             for link in Link.registry[src_widget]
+             for tgt_bk in map_hve_bk[link.target]]
     
     callbacks = []
     for link, src_widget, tgt_bk in found:
