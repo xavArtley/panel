@@ -208,7 +208,6 @@ class HoloViews(PaneBase):
         return widgets, dim_values
 
 
-
 def is_bokeh_element_plot(plot):
     """
     Checks whether plotting instance is a HoloViews ElementPlot rendered
