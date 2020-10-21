@@ -10,7 +10,7 @@ on:
     - '*'
 
 jobs:
-  test_suite:
+  default:
     name: Pytest on ${{ matrix.python-version }}, ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -19,12 +19,9 @@ jobs:
         os: ['ubuntu-latest']
         python-version: [3.7]
     timeout-minutes: 30
-    defaults:
-      run:
-        shell: bash -l {0} 
     env:
       DESC: "dev test_all"
-      PYTHON_VERSION: "${{ matrix.python-version }}"
+      PYTHON_VERSION: ${{ matrix.python-version }}
       DISPLAY: ":99.0"
       CHANS_DEV: "-c pyviz/label/dev -c bokeh/label/dev -c conda-forge"
       CHANS_REL: "-c pyviz -c bokeh -c conda-forge"
@@ -34,4 +31,4 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: ${PYTHON_VERSON}
+          python-version: ${PYTHON_VERSION}
