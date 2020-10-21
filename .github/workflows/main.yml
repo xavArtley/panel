@@ -23,20 +23,15 @@ jobs:
       run:
         shell: bash -l {0} 
     env:
-      DESC: "Python 3.7 tests"  # is this even necessary ?
+      DESC: "dev test_all"
       PYTHON_VERSION: ${{ matrix.python-version }}
+      DISPLAY: ":99.0"
+      CHANS_DEV: "-c pyviz/label/dev -c bokeh/label/dev -c conda-forge"
+      CHANS_REL: "-c pyviz -c bokeh -c conda-forge"
+      LABELS_DEV: "--label dev"
+      LABELS_REL: "--label dev --label main"
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
         with:
-          fetch-depth: "100"
-      - name: setup-conda
-        # You may pin to the exact commit or the version.
-        # uses: s-weigand/setup-conda@bf65a211e008297225b737b153801ac1231e9758
-        uses: s-weigand/setup-conda@v1.0.5
-        with:
-          # If conda should be updated before running other commands (Default: 'false')
-          update-conda: true
-          # Python version which should be installed with conda (default: 'Default')
-          python-version: 3.7
-          # Additional channels like 'conda-forge' which can be used to install packages
-          conda-channels: pyviz/label/dev
+          python-version: ${PYTHON_VERSON}
