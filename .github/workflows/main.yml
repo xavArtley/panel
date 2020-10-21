@@ -24,7 +24,7 @@ jobs:
         shell: bash -l {0} 
     env:
       DESC: "dev test_all"
-      PYTHON_VERSION: ${{ matrix.python-version }}
+      PYTHON_VERSION: "${{ matrix.python-version }}"
       DISPLAY: ":99.0"
       CHANS_DEV: "-c pyviz/label/dev -c bokeh/label/dev -c conda-forge"
       CHANS_REL: "-c pyviz -c bokeh -c conda-forge"
